@@ -158,7 +158,7 @@ namespace hook
 
 		inline pattern_match get_one()
 		{
-			return std::forward<pattern>(*this).count(1)._get_internal(0);
+			return std::forward<pattern>(*this).count_hint(1)._get_internal(0);
 		}
 
 		template<typename T = void>

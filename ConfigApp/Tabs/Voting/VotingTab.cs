@@ -10,7 +10,9 @@ namespace ConfigApp.Tabs.Voting
         {
             { "General", new GeneralTab() },
             { "Twitch", new TwitchTab() },
-            { "Discord", new DiscordTab() }
+            { "Discord", new DiscordTab() },
+            { "YouTube", new YouTubeTab() },
+            { "TikTok", new TikTokTab() }
         };
 
         protected override void InitContent()

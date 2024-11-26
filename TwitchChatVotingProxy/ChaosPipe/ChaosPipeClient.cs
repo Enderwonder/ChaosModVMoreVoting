@@ -1,4 +1,4 @@
-﻿using System.IO.Pipes;
+using System.IO.Pipes;
 using System.Timers;
 using Newtonsoft.Json;
 using Serilog;
@@ -66,7 +66,18 @@ namespace TwitchChatVotingProxy.ChaosPipe
 
             public ErrorObject(string message)
             {
-                Message = $"{message} Reverting to normal mode.";
+                Message = message;
+            }
+        }
+
+        public class StatusObject
+        {
+            public string Identifier { get; } = "status";
+            public string Message { get; }
+
+            public StatusObject(string message)
+            {
+                Message = message;
             }
         }
 
@@ -167,12 +178,14 @@ namespace TwitchChatVotingProxy.ChaosPipe
         {
             try
             {
+                m_Logger.Debug("Sending heartbeat...");
                 SendHeartBeat();
+                m_Logger.Debug("Reading pipe...");
                 ReadPipe();
             }
             catch (Exception exception)
             {
-                m_Logger.Information("Pipe disconnected: " + exception.Message);
+                m_Logger.Error(exception, "Pipe disconnected");
                 DisconnectFromPipe();
             }
         }
@@ -228,8 +241,18 @@ namespace TwitchChatVotingProxy.ChaosPipe
         /// <param name="message">Message to be sent</param>
         public void SendMessageToPipe(string message)
         {
-            m_PipeWriter?.Write($"{message}\0");
-            m_Pipe.WaitForPipeDrain();
+            try 
+            {
+                m_Logger.Debug("Sending message to pipe: {Message}", message);
+                m_PipeWriter?.Write($"{message}\0");
+                m_Pipe.WaitForPipeDrain();
+                m_Logger.Debug("Message sent successfully");
+            }
+            catch (Exception ex)
+            {
+                m_Logger.Error(ex, "Failed to send message to pipe");
+                throw;
+            }
         }
         /// <summary>
         /// Is called when the chaos mod starts a new vote
@@ -265,10 +288,15 @@ namespace TwitchChatVotingProxy.ChaosPipe
         /// <param name="message">Message to be sent</param>
         public void SendErrorMessage(string message)
         {
-            var error = new ErrorObject(message);
+            var error = new ErrorObject($"{message} Reverting to normal mode.");
             SendMessageToPipe(JsonConvert.SerializeObject(error));
-
             DisconnectFromPipe();
+        }
+
+        public void SendStatusMessage(string message)
+        {
+            var status = new StatusObject(message);
+            SendMessageToPipe(JsonConvert.SerializeObject(status));
         }
     }
 }
